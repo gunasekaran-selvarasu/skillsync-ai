@@ -14,6 +14,13 @@ async def signup(req: RegisterRequest, db=Depends(get_database)):
     if existing:
         raise HTTPException(status_code=400, detail="User with this email already registered")
 
+    # Public signup is strictly restricted to students to prevent privilege escalation
+    if req.role and req.role.lower().strip() != "student":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Public self-registration is restricted to students. Faculty and Administrator accounts are provisioned by college administration."
+        )
+
     # If college_id is not supplied, use default college
     college_id = req.college_id or "col_apex_001"
     
@@ -23,7 +30,7 @@ async def signup(req: RegisterRequest, db=Depends(get_database)):
         "name": req.name,
         "email": req.email.lower().strip(),
         "password_hash": pwd_hash,
-        "role": req.role,
+        "role": "student",
         "status": "active",
         "created_at": datetime.now(timezone.utc).isoformat(),
         "last_login": datetime.now(timezone.utc).isoformat()

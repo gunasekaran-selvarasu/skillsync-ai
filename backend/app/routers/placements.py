@@ -1,15 +1,15 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from datetime import datetime, timezone
 from bson import ObjectId
 from backend.app.core.database import get_database
 from backend.app.dependencies.auth import get_current_user, get_current_active_student, get_current_active_admin
-from backend.app.schemas import PlacementDriveCreate, ApplyDriveRequest
+from backend.app.schemas import PlacementDriveCreate, PlacementDriveUpdate, ApplyDriveRequest
 
 router = APIRouter(prefix="/placements", tags=["Placement Drives"])
 
 @router.get("/drives")
 async def list_drives(db=Depends(get_database)):
-    cursor = db.placement_drives.find({"status": "active"}).sort("created_at", -1)
+    cursor = db.placement_drives.find({}).sort("created_at", -1)
     drives = []
     async for d in cursor:
         d["id"] = str(d["_id"])
@@ -42,6 +42,69 @@ async def create_drive(
     drive_doc["id"] = str(res.inserted_id)
     drive_doc.pop("_id", None)
     return drive_doc
+
+@router.put("/drives/{drive_id}")
+async def update_drive(
+    drive_id: str,
+    req: PlacementDriveUpdate,
+    admin_user: dict = Depends(get_current_active_admin),
+    db=Depends(get_database)
+):
+    try:
+        drive = await db.placement_drives.find_one({"_id": ObjectId(drive_id)})
+    except Exception:
+        drive = await db.placement_drives.find_one({"_id": drive_id})
+    if not drive:
+        raise HTTPException(status_code=404, detail="Placement drive not found")
+
+    update_fields = {}
+    if req.company_name is not None:
+        update_fields["company_name"] = req.company_name
+    if req.job_title is not None:
+        update_fields["job_title"] = req.job_title
+    if req.description is not None:
+        update_fields["description"] = req.description
+    if req.min_cgpa is not None:
+        update_fields["min_cgpa"] = req.min_cgpa
+    if req.eligible_departments is not None:
+        update_fields["eligible_departments"] = req.eligible_departments
+    if req.required_skills is not None:
+        update_fields["required_skills"] = req.required_skills
+    if req.salary_package is not None:
+        update_fields["salary_package"] = req.salary_package
+    if req.drive_date is not None:
+        update_fields["drive_date"] = req.drive_date
+    if req.location is not None:
+        update_fields["location"] = req.location
+    if req.status is not None:
+        update_fields["status"] = req.status
+
+    if update_fields:
+        update_fields["updated_at"] = datetime.now(timezone.utc).isoformat()
+        await db.placement_drives.update_one({"_id": drive["_id"]}, {"$set": update_fields})
+
+    updated = await db.placement_drives.find_one({"_id": drive["_id"]})
+    updated["id"] = str(updated["_id"])
+    updated.pop("_id", None)
+    return updated
+
+@router.delete("/drives/{drive_id}")
+async def delete_drive(
+    drive_id: str,
+    admin_user: dict = Depends(get_current_active_admin),
+    db=Depends(get_database)
+):
+    try:
+        drive = await db.placement_drives.find_one({"_id": ObjectId(drive_id)})
+    except Exception:
+        drive = await db.placement_drives.find_one({"_id": drive_id})
+    if not drive:
+        raise HTTPException(status_code=404, detail="Placement drive not found")
+
+    await db.placement_drives.delete_one({"_id": drive["_id"]})
+    # Also clean up student applications for this drive
+    await db.student_applications.delete_many({"drive_id": str(drive["_id"])})
+    return {"message": f"Placement drive for {drive.get('company_name')} successfully deleted"}
 
 @router.post("/drives/{drive_id}/match")
 async def match_students_for_drive(

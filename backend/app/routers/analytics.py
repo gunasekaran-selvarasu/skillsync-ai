@@ -123,6 +123,7 @@ async def get_faculty_analytics(
 
     async for s in students_cursor:
         s["id"] = str(s["_id"])
+        s.pop("_id", None)
         # get user name
         u = await db.users.find_one({"_id": ObjectId(s["user_id"])}) if ObjectId.is_valid(s["user_id"]) else None
         s["name"] = u.get("name", "Student") if u else "Student"

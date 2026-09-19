@@ -21,6 +21,7 @@ async def list_assigned_students(
     students = []
     async for s in students_cursor:
         s["id"] = str(s["_id"])
+        s.pop("_id", None)
         u = await db.users.find_one({"_id": ObjectId(s["user_id"])}) if ObjectId.is_valid(s["user_id"]) else None
         s["name"] = u.get("name", "Student") if u else "Student"
         s["email"] = u.get("email", "") if u else ""
@@ -45,16 +46,36 @@ async def get_student_details(
     student = await db.students.find_one({"user_id": student_user_id})
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
+    student["id"] = str(student["_id"])
+    student.pop("_id", None)
 
     u = await db.users.find_one({"_id": ObjectId(student_user_id)}) if ObjectId.is_valid(student_user_id) else None
     student["name"] = u.get("name") if u else "Student"
     student["email"] = u.get("email") if u else ""
 
     # Skills & Evidence
-    skills = [s async for s in db.student_skills.find({"student_id": student_user_id})]
-    evidence = [e async for e in db.skill_evidence.find({"student_id": student_user_id})]
-    attempts = [a async for a in db.assessment_attempts.find({"student_id": student_user_id})]
+    skills = []
+    async for sk in db.student_skills.find({"student_id": student_user_id}):
+        sk["id"] = str(sk["_id"])
+        sk.pop("_id", None)
+        skills.append(sk)
+
+    evidence = []
+    async for ev in db.skill_evidence.find({"student_id": student_user_id}):
+        ev["id"] = str(ev["_id"])
+        ev.pop("_id", None)
+        evidence.append(ev)
+
+    attempts = []
+    async for a in db.assessment_attempts.find({"student_id": student_user_id}):
+        a["id"] = str(a["_id"])
+        a.pop("_id", None)
+        attempts.append(a)
+
     roadmap = await db.roadmaps.find_one({"student_id": student_user_id}, sort=[("version", -1)])
+    if roadmap:
+        roadmap["id"] = str(roadmap["_id"])
+        roadmap.pop("_id", None)
 
     return {
         "student": student,

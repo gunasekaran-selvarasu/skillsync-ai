@@ -83,7 +83,21 @@ class JobCreateRequest(BaseModel):
     required_skills: List[str] = []
     preferred_skills: List[str] = []
     package: Optional[str] = "8-12 LPA"
+    salary_package: Optional[str] = None
     location: Optional[str] = "Bangalore / Hybrid"
+
+class JobUpdateRequest(BaseModel):
+    company_name: Optional[str] = None
+    title: Optional[str] = None
+    description: Optional[str] = None
+    experience: Optional[str] = None
+    eligibility_min_cgpa: Optional[float] = None
+    required_skills: Optional[List[str]] = None
+    preferred_skills: Optional[List[str]] = None
+    package: Optional[str] = None
+    salary_package: Optional[str] = None
+    location: Optional[str] = None
+    status: Optional[str] = None
 
 class JobAnalyzeRequest(BaseModel):
     job_description: str
@@ -125,6 +139,18 @@ class PlacementDriveCreate(BaseModel):
     salary_package: str
     drive_date: str
     location: str = "On Campus"
+
+class PlacementDriveUpdate(BaseModel):
+    company_name: Optional[str] = None
+    job_title: Optional[str] = None
+    description: Optional[str] = None
+    min_cgpa: Optional[float] = None
+    eligible_departments: Optional[List[str]] = None
+    required_skills: Optional[List[str]] = None
+    salary_package: Optional[str] = None
+    drive_date: Optional[str] = None
+    location: Optional[str] = None
+    status: Optional[str] = None
 
 class ApplyDriveRequest(BaseModel):
     resume_id: Optional[str] = None

@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../stores/authContext';
-import { Sparkles, ArrowRight, ShieldCheck, UserCheck, GraduationCap } from 'lucide-react';
+import { Sparkles, ArrowRight } from 'lucide-react';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login, demoLogin } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -22,21 +22,6 @@ export default function Login() {
       else navigate('/admin/dashboard');
     } catch (err) {
       setError(err.response?.data?.detail || 'Invalid email or password');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDemo = async (role) => {
-    setError('');
-    setLoading(true);
-    try {
-      const user = await demoLogin(role);
-      if (user.role === 'student') navigate('/student/dashboard');
-      else if (user.role === 'faculty') navigate('/faculty/dashboard');
-      else navigate('/admin/dashboard');
-    } catch (err) {
-      setError('Demo login failed: ' + (err.response?.data?.detail || err.message));
     } finally {
       setLoading(false);
     }
@@ -104,7 +89,7 @@ export default function Login() {
           </form>
 
           <p className="mt-6 text-center text-xs text-slate-500">
-            Don't have an account?{' '}
+            New Student?{' '}
             <Link to="/register" className="font-semibold text-purple-600 hover:text-purple-700">
               Register here
             </Link>
